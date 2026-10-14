@@ -2,12 +2,15 @@
 
 namespace Illuminate\Tests\Integration\Queue;
 
+use Illuminate\Broadcasting\BroadcastEvent;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
@@ -75,6 +78,32 @@ class JobEncryptionTest extends DatabaseTestCase
         Queue::pop()->fire();
 
         $this->assertTrue(JobEncryptionTestNonEncryptedJob::$ran);
+    }
+
+    public function testEncryptedBroadcastEventPayloadIsStoredEncrypted()
+    {
+        Broadcast::queue(new JobEncryptionTestEncryptedBroadcastEvent);
+
+        $this->assertInstanceOf(BroadcastEvent::class, unserialize(
+            decrypt(json_decode(DB::table('jobs')->first()->payload)->data->command)
+        ));
+    }
+
+    public function testQueueCanProcessEncryptedBroadcastEvent()
+    {
+        Broadcast::queue(new JobEncryptionTestEncryptedBroadcastEvent);
+
+        Queue::pop()->fire();
+
+        $this->assertSame(0, DB::table('jobs')->count());
+    }
+}
+
+class JobEncryptionTestEncryptedBroadcastEvent implements ShouldBroadcast, ShouldBeEncrypted
+{
+    public function broadcastOn()
+    {
+        return [];
     }
 }
 

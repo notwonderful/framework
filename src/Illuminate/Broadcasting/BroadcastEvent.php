@@ -4,6 +4,7 @@ namespace Illuminate\Broadcasting;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Broadcasting\Factory as BroadcastingFactory;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Queue\Attributes\Backoff;
@@ -66,6 +67,13 @@ class BroadcastEvent implements ShouldQueue
     public $deleteWhenMissingModels = true;
 
     /**
+     * Indicates if the job should be encrypted.
+     *
+     * @var bool
+     */
+    public $shouldBeEncrypted = false;
+
+    /**
      * Create a new job handler instance.
      *
      * @param  mixed  $event
@@ -79,6 +87,7 @@ class BroadcastEvent implements ShouldQueue
         $this->afterCommit = property_exists($event, 'afterCommit') ? $event->afterCommit : null;
         $this->maxExceptions = $this->getAttributeValue($event, MaxExceptions::class, 'maxExceptions');
         $this->deleteWhenMissingModels = $this->getAttributeValue($event, DeleteWhenMissingModels::class, 'deleteWhenMissingModels') ?? true;
+        $this->shouldBeEncrypted = $event instanceof ShouldBeEncrypted;
     }
 
     /**

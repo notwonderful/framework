@@ -8,6 +8,7 @@ use Illuminate\Broadcasting\InteractsWithBroadcasting;
 use Illuminate\Broadcasting\UniqueBroadcastEvent;
 use Illuminate\Contracts\Broadcasting\Broadcaster;
 use Illuminate\Contracts\Broadcasting\Factory as BroadcastingFactory;
+use Illuminate\Contracts\Queue\ShouldBeEncrypted;
 use Illuminate\Queue\Attributes\UniqueFor;
 use Mockery;
 use PHPUnit\Framework\TestCase;
@@ -182,6 +183,27 @@ class BroadcastEventTest extends TestCase
         $this->assertFalse($job->deleteWhenMissingModels);
     }
 
+    public function testIsNotEncryptedByDefault()
+    {
+        $job = new BroadcastEvent(new TestBroadcastEvent);
+
+        $this->assertFalse($job->shouldBeEncrypted);
+    }
+
+    public function testIsEncryptedWhenTheEventShouldBeEncrypted()
+    {
+        $job = new BroadcastEvent(new TestEncryptedBroadcastEvent);
+
+        $this->assertTrue($job->shouldBeEncrypted);
+    }
+
+    public function testUniqueBroadcastEventIsEncryptedWhenTheEventShouldBeEncrypted()
+    {
+        $job = new UniqueBroadcastEvent(new TestEncryptedBroadcastEvent);
+
+        $this->assertTrue($job->shouldBeEncrypted);
+    }
+
     public function testMiddlewareProxiesFailedHandlerFromUnderlyingEvent()
     {
         $event = new class
@@ -240,6 +262,11 @@ class TestBroadcastEvent
     {
         return ['test-channel'];
     }
+}
+
+class TestEncryptedBroadcastEvent extends TestBroadcastEvent implements ShouldBeEncrypted
+{
+    //
 }
 
 class TestBroadcastEventWithStringName extends TestBroadcastEvent
