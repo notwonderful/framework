@@ -4,7 +4,10 @@ namespace Illuminate\Http\Resources\Json;
 
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Resources\Attributes\Wrap;
 use Illuminate\Support\Collection;
+use ReflectionClass;
+use ReflectionProperty;
 
 class ResourceResponse implements Responsable
 {
@@ -14,6 +17,13 @@ class ResourceResponse implements Responsable
      * @var mixed
      */
     public $resource;
+
+    /**
+     * The cached "Wrap" attribute keys for each resource class, or false when there is none.
+     *
+     * @var array<class-string, string|null|false>
+     */
+    protected static $cachedWrapAttributes = [];
 
     /**
      * Create a new resource response.
@@ -109,7 +119,19 @@ class ResourceResponse implements Responsable
      */
     protected function wrapper()
     {
-        return get_class($this->resource)::$wrap;
+        $class = get_class($this->resource);
+
+        if (! array_key_exists($class, static::$cachedWrapAttributes)) {
+            $attribute = (new ReflectionClass($class))->getAttributes(Wrap::class)[0] ?? null;
+
+            static::$cachedWrapAttributes[$class] = $attribute && (new ReflectionProperty($class, 'wrap'))->getDeclaringClass()->getName() !== $class
+                ? $attribute->newInstance()->key
+                : false;
+        }
+
+        return static::$cachedWrapAttributes[$class] !== false
+            ? static::$cachedWrapAttributes[$class]
+            : $class::$wrap;
     }
 
     /**
