@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\Pivot;
 use Illuminate\Database\Schema\Blueprint;
 use PHPUnit\Framework\TestCase;
+use WeakReference;
 
 class DatabaseEloquentBelongsToManyWherePivotClosureTest extends TestCase
 {
@@ -178,6 +179,27 @@ class DatabaseEloquentBelongsToManyWherePivotClosureTest extends TestCase
 
         $this->assertSame(0, $affected);
         $this->assertSame('member', $project->subscribers()->find($muted->id)->pivot->role);
+    }
+
+    public function testRelationIsReleasedWithoutGarbageCollectionAfterWherePivotClosure(): void
+    {
+        $project = WherePivotClosureProject::create(['title' => 'Project 1']);
+
+        gc_disable();
+
+        try {
+            $relation = $project->subscribers()->wherePivot(function ($query) {
+                $query->active();
+            });
+
+            $reference = WeakReference::create($relation);
+
+            unset($relation);
+
+            $this->assertNull($reference->get());
+        } finally {
+            gc_enable();
+        }
     }
 
     protected function connection()
