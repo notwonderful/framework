@@ -7,6 +7,7 @@ use Illuminate\Foundation\Auth\User;
 use Illuminate\Foundation\Http\Middleware\ValidatePostSize;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Attributes\Wrap;
 use Illuminate\Http\Resources\ConditionallyLoadsAttributes;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Http\Resources\Json\ResourceCollection;
@@ -2066,6 +2067,58 @@ class ResourceTest extends TestCase
                 'data' => 'some data',
             ],
         ], $content);
+    }
+
+    public function testResourceCanBeWrappedUsingAttribute()
+    {
+        $resource = new #[Wrap('post')] class(['id' => 5, 'title' => 'Test']) extends JsonResource
+        {
+            //
+        };
+
+        $response = $resource->toResponse(request());
+
+        $this->assertEquals(['post' => ['id' => 5, 'title' => 'Test']], json_decode($response->getContent(), true));
+    }
+
+    public function testResourceWrappingCanBeDisabledUsingAttribute()
+    {
+        $resource = new #[Wrap(null)] class(['id' => 5, 'title' => 'Test']) extends JsonResource
+        {
+            //
+        };
+
+        $response = $resource->toResponse(request());
+
+        $this->assertEquals(['id' => 5, 'title' => 'Test'], json_decode($response->getContent(), true));
+    }
+
+    public function testWrapAttributeTakesPrecedenceOverGlobalWrapping()
+    {
+        $resource = new #[Wrap('post')] class(['id' => 5, 'title' => 'Test']) extends JsonResource
+        {
+            //
+        };
+
+        JsonResource::withoutWrapping();
+
+        $response = $resource->toResponse(request());
+
+        JsonResource::flushState();
+
+        $this->assertEquals(['post' => ['id' => 5, 'title' => 'Test']], json_decode($response->getContent(), true));
+    }
+
+    public function testWrapPropertyTakesPrecedenceOverWrapAttribute()
+    {
+        $resource = new #[Wrap('post')] class(['id' => 5, 'title' => 'Test']) extends JsonResource
+        {
+            public static $wrap = 'article';
+        };
+
+        $response = $resource->toResponse(request());
+
+        $this->assertEquals(['article' => ['id' => 5, 'title' => 'Test']], json_decode($response->getContent(), true));
     }
 
     private function assertJsonResourceResponse($data, $expectedJson)

@@ -4,7 +4,10 @@ namespace Illuminate\Http\Resources\Json;
 
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Resources\Attributes\Wrap;
 use Illuminate\Support\Collection;
+use ReflectionClass;
+use ReflectionProperty;
 
 class ResourceResponse implements Responsable
 {
@@ -109,7 +112,15 @@ class ResourceResponse implements Responsable
      */
     protected function wrapper()
     {
-        return get_class($this->resource)::$wrap;
+        $class = get_class($this->resource);
+
+        $attributes = (new ReflectionClass($class))->getAttributes(Wrap::class);
+
+        if ($attributes !== [] && (new ReflectionProperty($class, 'wrap'))->getDeclaringClass()->getName() !== $class) {
+            return $attributes[0]->newInstance()->key;
+        }
+
+        return $class::$wrap;
     }
 
     /**
