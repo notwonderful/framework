@@ -2109,6 +2109,21 @@ class ResourceTest extends TestCase
         $this->assertEquals(['post' => ['id' => 5, 'title' => 'Test']], json_decode($response->getContent(), true));
     }
 
+    public function testResourceCollectionCanBeWrappedUsingAttribute()
+    {
+        $resource = new #[Wrap('posts')] class([new class(['id' => 5, 'title' => 'Test']) extends JsonResource
+        {
+            //
+        },
+        ]) extends ResourceCollection {
+            //
+        };
+
+        $response = $resource->toResponse(request());
+
+        $this->assertEquals(['posts' => [['id' => 5, 'title' => 'Test']]], json_decode($response->getContent(), true));
+    }
+
     public function testWrapPropertyTakesPrecedenceOverWrapAttribute()
     {
         $resource = new #[Wrap('post')] class(['id' => 5, 'title' => 'Test']) extends JsonResource

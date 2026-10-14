@@ -19,6 +19,13 @@ class ResourceResponse implements Responsable
     public $resource;
 
     /**
+     * The cached "Wrap" attribute keys for each resource class, or false when there is none.
+     *
+     * @var array<class-string, string|null|false>
+     */
+    protected static $cachedWrapAttributes = [];
+
+    /**
      * Create a new resource response.
      *
      * @param  mixed  $resource
@@ -114,13 +121,17 @@ class ResourceResponse implements Responsable
     {
         $class = get_class($this->resource);
 
-        $attributes = (new ReflectionClass($class))->getAttributes(Wrap::class);
+        if (! array_key_exists($class, static::$cachedWrapAttributes)) {
+            $attribute = (new ReflectionClass($class))->getAttributes(Wrap::class)[0] ?? null;
 
-        if ($attributes !== [] && (new ReflectionProperty($class, 'wrap'))->getDeclaringClass()->getName() !== $class) {
-            return $attributes[0]->newInstance()->key;
+            static::$cachedWrapAttributes[$class] = $attribute && (new ReflectionProperty($class, 'wrap'))->getDeclaringClass()->getName() !== $class
+                ? $attribute->newInstance()->key
+                : false;
         }
 
-        return $class::$wrap;
+        return static::$cachedWrapAttributes[$class] !== false
+            ? static::$cachedWrapAttributes[$class]
+            : $class::$wrap;
     }
 
     /**
