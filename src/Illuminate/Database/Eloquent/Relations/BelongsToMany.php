@@ -412,7 +412,7 @@ class BelongsToMany extends Relation
             $column($pivotQuery);
 
             $this->pivotWheres[] = [
-                fn ($query) => $query->addNestedWhereQuery($pivotQuery->getQuery()),
+                static fn ($query) => $query->addNestedWhereQuery($pivotQuery->getQuery()),
                 null,
                 null,
                 $boolean,
