@@ -16,6 +16,8 @@ class Table
      * @param  bool|null  $incrementing
      * @param  bool|null  $timestamps
      * @param  string|null  $dateFormat
+     * @param  string|null  $createdAt
+     * @param  string|null  $updatedAt
      */
     public function __construct(
         public ?string $name = null,
@@ -24,6 +26,8 @@ class Table
         public ?bool $incrementing = null,
         public ?bool $timestamps = null,
         public ?string $dateFormat = null,
+        public ?string $createdAt = null,
+        public ?string $updatedAt = null,
     ) {
     }
 }
