@@ -192,13 +192,16 @@ class BroadcastEventTest extends TestCase
 
     public function testIsEncryptedWhenTheEventShouldBeEncrypted()
     {
-        $event = new class implements ShouldBeEncrypted
-        {
-            //
-        };
+        $job = new BroadcastEvent(new TestEncryptedBroadcastEvent);
 
-        $this->assertTrue((new BroadcastEvent($event))->shouldBeEncrypted);
-        $this->assertTrue((new UniqueBroadcastEvent($event))->shouldBeEncrypted);
+        $this->assertTrue($job->shouldBeEncrypted);
+    }
+
+    public function testUniqueBroadcastEventIsEncryptedWhenTheEventShouldBeEncrypted()
+    {
+        $job = new UniqueBroadcastEvent(new TestEncryptedBroadcastEvent);
+
+        $this->assertTrue($job->shouldBeEncrypted);
     }
 
     public function testMiddlewareProxiesFailedHandlerFromUnderlyingEvent()
@@ -259,6 +262,11 @@ class TestBroadcastEvent
     {
         return ['test-channel'];
     }
+}
+
+class TestEncryptedBroadcastEvent extends TestBroadcastEvent implements ShouldBeEncrypted
+{
+    //
 }
 
 class TestBroadcastEventWithStringName extends TestBroadcastEvent
