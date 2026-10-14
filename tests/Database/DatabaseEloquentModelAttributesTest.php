@@ -241,6 +241,24 @@ class DatabaseEloquentModelAttributesTest extends TestCase
 
         $this->assertSame('creation_date', $model->getCreatedAtColumn());
         $this->assertNull($model->getUpdatedAtColumn());
+        $this->assertTrue(ModelWithTimestampColumnsAttributeAndConstants::isIgnoringTouch());
+    }
+
+    public function test_child_timestamp_columns_attribute_overrides_inherited_constants(): void
+    {
+        $model = new ChildModelWithTimestampColumnsAttributeOverridingConstants;
+
+        $this->assertSame('placed_at', $model->getCreatedAtColumn());
+        $this->assertSame('modified_at', $model->getUpdatedAtColumn());
+        $this->assertFalse(ChildModelWithTimestampColumnsAttributeOverridingConstants::isIgnoringTouch());
+    }
+
+    public function test_child_timestamp_constant_overrides_parent_timestamp_columns_attribute(): void
+    {
+        $model = new ChildModelWithTimestampConstantOverridingAttribute;
+
+        $this->assertSame('creation_date', $model->getCreatedAtColumn());
+        $this->assertSame('modified_at', $model->getUpdatedAtColumn());
     }
 
     public function test_fillable_attribute(): void
@@ -707,6 +725,24 @@ class ModelWithTimestampColumnsAttributeAndConstants extends Model
     const CREATED_AT = 'creation_date';
 
     const UPDATED_AT = null;
+}
+
+class ParentModelWithTimestampConstants extends Model
+{
+    const CREATED_AT = 'creation_date';
+
+    const UPDATED_AT = null;
+}
+
+#[Table(createdAt: 'placed_at', updatedAt: 'modified_at')]
+class ChildModelWithTimestampColumnsAttributeOverridingConstants extends ParentModelWithTimestampConstants
+{
+    //
+}
+
+class ChildModelWithTimestampConstantOverridingAttribute extends ModelWithTimestampColumnsAttribute
+{
+    const CREATED_AT = 'creation_date';
 }
 
 #[Table(name: 'collision_table', timestamps: false)]

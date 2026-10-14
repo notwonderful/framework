@@ -553,7 +553,7 @@ abstract class Model implements Arrayable, ArrayAccess, CanBeEscapedWhenCastToSt
     {
         $class = $class ?: static::class;
 
-        if (! $class::UPDATED_AT) {
+        if (! static::resolveTimestampColumn('UPDATED_AT', 'updatedAt', $class)) {
             return true;
         }
 

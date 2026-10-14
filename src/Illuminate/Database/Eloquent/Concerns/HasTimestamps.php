@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Attributes\Table;
 use Illuminate\Database\Eloquent\Attributes\WithoutTimestamps;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Date;
+use ReflectionClass;
+use ReflectionClassConstant;
 
 trait HasTimestamps
 {
@@ -166,11 +168,7 @@ trait HasTimestamps
      */
     public function getCreatedAtColumn()
     {
-        if (static::CREATED_AT !== 'created_at') {
-            return static::CREATED_AT;
-        }
-
-        return static::resolveClassAttribute(Table::class, 'createdAt') ?? static::CREATED_AT;
+        return static::resolveTimestampColumn('CREATED_AT', 'createdAt');
     }
 
     /**
@@ -180,11 +178,40 @@ trait HasTimestamps
      */
     public function getUpdatedAtColumn()
     {
-        if (static::UPDATED_AT !== 'updated_at') {
-            return static::UPDATED_AT;
+        return static::resolveTimestampColumn('UPDATED_AT', 'updatedAt');
+    }
+
+    /**
+     * Resolve a timestamp column name from its constant or the "Table" attribute, whichever is declared closer to the model.
+     *
+     * @param  string  $constant
+     * @param  string  $property
+     * @param  class-string|null  $class
+     * @return string|null
+     */
+    protected static function resolveTimestampColumn(string $constant, string $property, ?string $class = null)
+    {
+        $class ??= static::class;
+
+        $cacheKey = $class.'@'.$constant;
+
+        if (array_key_exists($cacheKey, static::$classAttributes)) {
+            return static::$classAttributes[$cacheKey];
         }
 
-        return static::resolveClassAttribute(Table::class, 'updatedAt') ?? static::UPDATED_AT;
+        $column = constant($class.'::'.$constant);
+
+        $declaringClass = (new ReflectionClassConstant($class, $constant))->getDeclaringClass()->getName();
+
+        for ($reflection = new ReflectionClass($class); $reflection->getName() !== $declaringClass; $reflection = $reflection->getParentClass()) {
+            if ($table = $reflection->getAttributes(Table::class)[0] ?? null) {
+                $column = $table->newInstance()->{$property} ?? $column;
+
+                break;
+            }
+        }
+
+        return static::$classAttributes[$cacheKey] = $column;
     }
 
     /**
