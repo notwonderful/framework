@@ -166,7 +166,11 @@ trait HasTimestamps
      */
     public function getCreatedAtColumn()
     {
-        return static::CREATED_AT;
+        if (static::CREATED_AT !== 'created_at') {
+            return static::CREATED_AT;
+        }
+
+        return static::resolveClassAttribute(Table::class, 'createdAt') ?? static::CREATED_AT;
     }
 
     /**
@@ -176,7 +180,11 @@ trait HasTimestamps
      */
     public function getUpdatedAtColumn()
     {
-        return static::UPDATED_AT;
+        if (static::UPDATED_AT !== 'updated_at') {
+            return static::UPDATED_AT;
+        }
+
+        return static::resolveClassAttribute(Table::class, 'updatedAt') ?? static::UPDATED_AT;
     }
 
     /**
